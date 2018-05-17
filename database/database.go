@@ -46,10 +46,9 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"cloud.google.com/go/trace"
 	"github.com/garyburd/redigo/redis"
 	"github.com/golang/snappy"
-	"golang.org/x/oauth2/google"
+	"golang.org/x/oauth2"
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/remote_api"
 	"google.golang.org/appengine/search"
@@ -123,15 +122,7 @@ func newDBDialer(server string, logConn bool) func() (c redis.Conn, err error) {
 }
 
 func newRemoteClient(host string) (*remote_api.Client, error) {
-	client, err := google.DefaultClient(context.TODO(),
-		"https://www.googleapis.com/auth/appengine.apis",
-	)
-	if err != nil {
-		return nil, err
-	}
-	client.Transport = trace.Transport{Base: client.Transport}
-
-	return remote_api.NewClient(host, client)
+	return remote_api.NewClient(host, oauth2.NewClient(context.TODO(), oauth2.StaticTokenSource(&oauth2.Token{})))
 }
 
 // New creates a gddo database. serverURI, idleTimeout, and logConn configure
