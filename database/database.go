@@ -37,6 +37,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"net/http"
 	"net/url"
 	"os"
 	"path"
@@ -48,7 +49,6 @@ import (
 
 	"github.com/garyburd/redigo/redis"
 	"github.com/golang/snappy"
-	"golang.org/x/oauth2"
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/remote_api"
 	"google.golang.org/appengine/search"
@@ -122,7 +122,9 @@ func newDBDialer(server string, logConn bool) func() (c redis.Conn, err error) {
 }
 
 func newRemoteClient(host string) (*remote_api.Client, error) {
-	return remote_api.NewClient(host, oauth2.NewClient(context.TODO(), oauth2.StaticTokenSource(&oauth2.Token{})))
+	return remote_api.NewClient(host, &http.Client{
+		Transport: &insecureTransport{},
+	})
 }
 
 // New creates a gddo database. serverURI, idleTimeout, and logConn configure
