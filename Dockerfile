@@ -14,10 +14,9 @@ ADD . ./
 RUN CGO_ENABLED=0 go build -ldflags="-s -w -extldflags '-static'" -o /gddo-server ./gddo-server
 
 
-#FROM alpine:3.7
-FROM scratch
+FROM alpine:3.7
+RUN apk add -U --no-cache ca-certificates graphviz
 COPY --from=0 /gddo-server /gddo-server
-COPY --from=0 /etc/ssl /etc/ssl
 ADD ./gddo-server/assets /assets
 WORKDIR /
 ENV GITHUB_TOKEN=
