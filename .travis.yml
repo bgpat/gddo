@@ -2,9 +2,8 @@ language: go
 go:
   - 1.9
 before_install:
-  - go get -u github.com/golang/dep/cmd/dep
+  - ln -s $GOPATH/src/bgpat/gddo $GOPATH/src/golang/gddo
 install:
-  - dep ensure -vendor-only
   - |
     LATEST_SDK="$(curl -fsSL 'https://www.googleapis.com/storage/v1/b/appengine-sdks/o?prefix=featured%2F' |
     jq -r '([.items[] |
