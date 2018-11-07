@@ -7,6 +7,7 @@ before_install:
   - ln -s $GOPATH/src/github.com/bgpat/gddo $GOPATH/src/github.com/golang/gddo
 install:
   - dep ensure -vendor-only
+  - go get cloud.google.com/go/pubsub
   - |
     LATEST_SDK="$(curl -fsSL 'https://www.googleapis.com/storage/v1/b/appengine-sdks/o?prefix=featured%2F' |
     jq -r '([.items[] |
