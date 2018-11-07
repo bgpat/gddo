@@ -2,7 +2,8 @@ language: go
 go:
   - 1.9
 before_install:
-  - ln -s $GOPATH/src/bgpat/gddo $GOPATH/src/golang/gddo
+  - mkdir -p $GOPATH/src/github.com/golang
+  - ln -s $GOPATH/src/github.com/bgpat/gddo $GOPATH/src/github.com/golang/gddo
 install:
   - |
     LATEST_SDK="$(curl -fsSL 'https://www.googleapis.com/storage/v1/b/appengine-sdks/o?prefix=featured%2F' |
