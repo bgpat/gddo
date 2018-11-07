@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/logging"
+	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/trace"
 	"github.com/spf13/viper"
 
@@ -409,7 +410,7 @@ func (s *server) servePackage(resp http.ResponseWriter, req *http.Request) error
 
 		return s.templates.execute(resp, template, status, http.Header{"Etag": {etag}}, map[string]interface{}{
 			"flashMessages": flashMessages,
-			"pkgs":          removeInternal(pdoc, pkgs),
+			"pkgs":          pkgs,
 			"pdoc":          newTDoc(s.v, pdoc),
 			"importerCount": importerCount,
 		})
@@ -838,6 +839,7 @@ type server struct {
 	gceLogger   *GCELogger
 	templates   templateMap
 	traceClient *trace.Client
+	crawlTopic  *pubsub.Topic
 
 	statusPNG http.Handler
 	statusSVG http.Handler
@@ -861,6 +863,13 @@ func newServer(ctx context.Context, v *viper.Viper) (*server, error) {
 			return nil, err
 		}
 		s.traceClient.SetSamplingPolicy(sp)
+
+		// This topic should be created in the cloud console.
+		ps, err := pubsub.NewClient(ctx, proj)
+		if err != nil {
+			return nil, err
+		}
+		s.crawlTopic = ps.Topic(ConfigCrawlPubSubTopic)
 	}
 
 	assets := v.GetString(ConfigAssetsDir)
@@ -1009,29 +1018,4 @@ func main() {
 	}()
 	http.Handle("/", s)
 	log.Fatal(http.ListenAndServe(s.v.GetString(ConfigBindAddress), s))
-}
-
-// removeInternal removes the internal packages from the given package
-// listing unless they are direct children of the given pdoc.
-// Packages filtered by this function will only list internal packages
-// underneath their own package godoc.
-func removeInternal(pdoc *doc.Package, pkgs []database.Package) []database.Package {
-	const internalPkg = "internal"
-
-	if len(pkgs) == 0 {
-		return pkgs
-	}
-	var filtered []database.Package
-	for _, pkg := range pkgs {
-		// List internal packages only under their parent package.
-		// Always list children of the internal packages if user
-		// is looking at the internal godoc.
-		if pdoc.Name != internalPkg && strings.Contains(pkg.Path, internalPkg) {
-			if !strings.HasPrefix(pkg.Path, pdoc.ImportPath+"/"+internalPkg) {
-				continue
-			}
-		}
-		filtered = append(filtered, pkg)
-	}
-	return filtered
 }

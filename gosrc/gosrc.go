@@ -55,6 +55,13 @@ type Directory struct {
 	// Import path of package after resolving go-import meta tags, if any.
 	ResolvedPath string
 
+	// Import path of package with the canonical user/repo case as reported by
+	// the github.com server. Optional.
+	// If set, used to ensure canonical case is used when there's no import path
+	// comment (e.g., to redirect from "github.com/UsEr/rEpO/dir" to
+	// "github.com/User/Repo/dir").
+	ResolvedGitHubPath string
+
 	// Import path prefix for all packages in the project.
 	ProjectRoot string
 
@@ -302,6 +309,10 @@ metaScan:
 					errorMessage = "go-import meta tag content attribute does not have three fields"
 					continue metaScan
 				}
+				if fields[1] == "mod" {
+					// vgo adds a special mod vcs type; we can skip this
+					continue
+				}
 				if im != nil {
 					im = nil
 					errorMessage = "more than one go-import meta tag found"
@@ -374,6 +385,9 @@ func getDynamic(ctx context.Context, client *http.Client, importPath, etag strin
 	proto := im.repo[:i]
 	clonePath := im.repo[i+len("://"):]
 	repo := strings.TrimSuffix(clonePath, "."+im.vcs)
+	if !IsValidRemotePath(repo) {
+		return nil, fmt.Errorf("bad path from meta: %s", repo)
+	}
 	dirName := importPath[len(im.projectRoot):]
 
 	resolvedPath := repo + dirName
@@ -441,7 +455,7 @@ func getDynamic(ctx context.Context, client *http.Client, importPath, etag strin
 	return dir, nil
 }
 
-// getStatic gets a diretory from a statically known service. getStatic
+// getStatic gets a directory from a statically known service. getStatic
 // returns errNoMatch if the import path is not recognized.
 func getStatic(ctx context.Context, client *http.Client, importPath, etag string) (*Directory, error) {
 	for _, s := range services {
@@ -526,4 +540,36 @@ func GetProject(ctx context.Context, client *http.Client, importPath string) (*P
 		}
 	}
 	return nil, NotFoundError{Message: "path does not match registered service"}
+}
+
+// MaybeRedirect uses the provided import path, import comment, and resolved GitHub path
+// to make a decision of whether to redirect to another, more canonical import path.
+// It returns nil error to indicate no redirect, or a NotFoundError error to redirect.
+func MaybeRedirect(importPath, importComment, resolvedGitHubPath string) error {
+	switch {
+	case importComment != "":
+		// Redirect to import comment, if not already there.
+		if importPath != importComment {
+			return NotFoundError{
+				Message:  "not at canonical import path",
+				Redirect: importComment,
+			}
+		}
+
+	// Redirect to GitHub's reported canonical casing when there's no import comment,
+	// and the import path differs from resolved GitHub path only in case.
+	case importComment == "" && resolvedGitHubPath != "" &&
+		strings.EqualFold(importPath, resolvedGitHubPath):
+
+		// Redirect to resolved GitHub path, if not already there.
+		if importPath != resolvedGitHubPath {
+			return NotFoundError{
+				Message:  "not at canonical import path",
+				Redirect: resolvedGitHubPath,
+			}
+		}
+	}
+
+	// No redirect.
+	return nil
 }
