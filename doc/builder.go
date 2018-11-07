@@ -465,6 +465,7 @@ var goEnvs = []struct{ GOOS, GOARCH string }{
 	{"linux", "amd64"},
 	{"darwin", "amd64"},
 	{"windows", "amd64"},
+	{"js", "wasm"},
 	{"linux", "js"},
 }
 
@@ -576,11 +577,11 @@ func newPackage(dir *gosrc.Directory) (*Package, error) {
 		return pkg, nil
 	}
 
-	if bpkg.ImportComment != "" && bpkg.ImportComment != dir.ImportPath {
-		return nil, gosrc.NotFoundError{
-			Message:  "not at canonical import path",
-			Redirect: bpkg.ImportComment,
-		}
+	// Use information we have by now (import comment and resolved GitHub path)
+	// to redirect to a canonical import path, when it's possible to do so reliably.
+	err = gosrc.MaybeRedirect(dir.ImportPath, bpkg.ImportComment, dir.ResolvedGitHubPath)
+	if err != nil {
+		return nil, err
 	}
 
 	// Parse the Go files
