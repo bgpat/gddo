@@ -45,6 +45,7 @@ const (
 	ConfigSourcegraphURL = "sourcegraph_url"
 	ConfigDefaultGOOS    = "default_goos"
 	ConfigGAAccount      = "ga_account"
+	ConfigPlaygroundURL  = "playground_url"
 
 	// Crawl Config
 	ConfigMaxAge          = "max_age"
@@ -159,6 +160,7 @@ func buildFlags() *pflag.FlagSet {
 	flags.String(ConfigDefaultGOOS, "", "Default GOOS to use when building package documents.")
 	flags.Bool(ConfigTrustProxyHeaders, false, "If enabled, identify the remote address of the request using X-Real-Ip in header.")
 	flags.String(ConfigSourcegraphURL, "https://sourcegraph.com", "Link to global uses on Sourcegraph based at this URL (no need for trailing slash).")
+	flags.String(ConfigPlaygroundURL, "https://play.golang.org", "Link to Go Playground based at this URL.")
 	flags.Duration(ConfigGithubInterval, 0, "Github updates crawler sleeps for this duration between fetches. Zero disables the crawler.")
 	flags.Duration(ConfigCrawlInterval, 0, "Package updater sleeps for this duration between package updates. Zero disables updates.")
 	flags.Duration(ConfigDialTimeout, 5*time.Second, "Timeout for dialing an HTTP connection.")
