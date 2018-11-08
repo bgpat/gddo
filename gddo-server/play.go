@@ -60,7 +60,7 @@ var exampleIDPat = regexp.MustCompile(`([^-]+)(?:-([^-]*)(?:-(.*))?)?`)
 func (s *server) playURL(pdoc *doc.Package, id, countryHeader string) (string, error) {
 	if m := exampleIDPat.FindStringSubmatch(id); m != nil {
 		if e := findExample(pdoc, m[1], m[2], m[3]); e != nil && e.Play != "" {
-			req, err := http.NewRequest("POST", s.v.GetString(ConfigPlaygroundURL)+"/share", strings.NewReader(e.Play))
+			req, err := http.NewRequest("POST", s.v.GetString(ConfigInternalPlaygroundURL)+"/share", strings.NewReader(e.Play))
 			if err != nil {
 				return "", err
 			}
@@ -81,7 +81,7 @@ func (s *server) playURL(pdoc *doc.Package, id, countryHeader string) (string, e
 			if resp.StatusCode > 399 {
 				return "", &httpError{
 					status: resp.StatusCode,
-					err:    fmt.Errorf("Error from %s: %s", s.v.GetString(ConfigPlaygroundURL), p),
+					err:    fmt.Errorf("Error from %s: %s", s.v.GetString(ConfigInternalPlaygroundURL), p),
 				}
 			}
 			return fmt.Sprintf("%s/p/%s", s.v.GetString(ConfigPlaygroundURL), p), nil
